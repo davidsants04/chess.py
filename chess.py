@@ -45,13 +45,53 @@ def highlight_valid_moves(screen, valid_moves):
         row, col = move
         pygame.draw.rect(screen, HIGHLIGHT, pygame.Rect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
 
+# Função para verificar se há peças no caminho de uma peça que não seja o cavalo
+def is_path_clear(start_pos, end_pos, board):
+    start_row, start_col = start_pos
+    end_row, end_col = end_pos
+
+    # Caso horizontal
+    if start_row == end_row:
+        step = 1 if start_col < end_col else -1
+        for col in range(start_col + step, end_col, step):
+            if board[start_row][col] != "":
+                return False
+        return True
+
+    # Caso vertical
+    if start_col == end_col:
+        step = 1 if start_row < end_row else -1
+        for row in range(start_row + step, end_row, step):
+            if board[row][start_col] != "":
+                return False
+        return True
+
+    # Caso diagonal
+    if abs(start_row - end_row) == abs(start_col - end_col):
+        row_step = 1 if start_row < end_row else -1
+        col_step = 1 if start_col < end_col else -1
+        row, col = start_row + row_step, start_col + col_step
+        while row != end_row and col != end_col:
+            if board[row][col] != "":
+                return False
+            row += row_step
+            col += col_step
+        return True
+
+    return False
+
 # Função para verificar a validade de um movimento para as peças
 def is_valid_move(piece, start_pos, end_pos, board, current_turn):
     start_row, start_col = start_pos
     end_row, end_col = end_pos
 
+    # Verificar se a peça pertence ao jogador correto
     if (current_turn == 'white' and piece.islower()) or (current_turn == 'black' and piece.isupper()):
         return False  # Não é a vez do jogador para mover essa peça
+
+    # Verificar se a peça não está tentando se mover para uma casa ocupada por peça do mesmo time
+    if board[end_row][end_col] != "" and ((board[end_row][end_col].isupper() and piece.isupper()) or (board[end_row][end_col].islower() and piece.islower())):
+        return False  # Peça do mesmo time
 
     # Movimentos do peão
     if piece.lower() == 'p':
@@ -64,45 +104,32 @@ def is_valid_move(piece, start_pos, end_pos, board, current_turn):
             return True
 
     # Movimentos da torre
-    if piece.lower() == 'r':
-        if start_row == end_row:  # Movimento horizontal
-            for c in range(min(start_col, end_col) + 1, max(start_col, end_col)):
-                if board[start_row][c] != "":
-                    return False
-            return True
-        if start_col == end_col:  # Movimento vertical
-            for r in range(min(start_row, end_row) + 1, max(start_row, end_row)):
-                if board[r][start_col] != "":
-                    return False
-            return True
+    if piece.lower() == 't':
+        if start_row == end_row or start_col == end_col:  # Movimento horizontal ou vertical
+            return is_path_clear(start_pos, end_pos, board)  # Verificar se o caminho está livre
+        return False
 
     # Movimentos do cavalo
-    if piece.lower() == 'n':
+    if piece.lower() == 'c':
         if (abs(start_row - end_row) == 2 and abs(start_col - end_col) == 1) or (abs(start_row - end_row) == 1 and abs(start_col - end_col) == 2):
             return True
 
     # Movimentos do bispo
     if piece.lower() == 'b':
-        if abs(start_row - end_row) == abs(start_col - end_col):
-            return True
+        if abs(start_row - end_row) == abs(start_col - end_col):  # Movimento diagonal
+            return is_path_clear(start_pos, end_pos, board)  # Verificar se o caminho está livre
+        return False
 
     # Movimentos da rainha
-    if piece.lower() == 'q':
-        if start_row == end_row:  # Movimento horizontal
-            for c in range(min(start_col, end_col) + 1, max(start_col, end_col)):
-                if board[start_row][c] != "":
-                    return False
-            return True
-        if start_col == end_col:  # Movimento vertical
-            for r in range(min(start_row, end_row) + 1, max(start_row, end_row)):
-                if board[r][start_col] != "":
-                    return False
-            return True
+    if piece.lower() == 'd':
+        if start_row == end_row or start_col == end_col:  # Movimento horizontal ou vertical
+            return is_path_clear(start_pos, end_pos, board)  # Verificar se o caminho está livre
         if abs(start_row - end_row) == abs(start_col - end_col):  # Movimento diagonal
-            return True
+            return is_path_clear(start_pos, end_pos, board)  # Verificar se o caminho está livre
+        return False
 
     # Movimentos do rei
-    if piece.lower() == 'k':
+    if piece.lower() == 'r':
         if abs(start_row - end_row) <= 1 and abs(start_col - end_col) <= 1:
             return True
 
@@ -133,14 +160,14 @@ def main():
     
     # Tabuleiro inicial (simplificado)
     board = [
-        ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+        ['t', 'c', 'b', 'd', 'r', 'b', 'c', 't'],
         ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
         ['', '', '', '', '', '', '', ''],
         ['', '', '', '', '', '', '', ''],
         ['', '', '', '', '', '', '', ''],
         ['', '', '', '', '', '', '', ''],
         ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-        ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+        ['T', 'C', 'B', 'D', 'R', 'B', 'C', 'T']
     ]
     
     selected_piece = None
@@ -198,9 +225,9 @@ def main():
                         black_king_pos = None
                         for r in range(BOARD_SIZE):
                             for c in range(BOARD_SIZE):
-                                if board[r][c] == 'K':
+                                if board[r][c] == 'R':
                                     white_king_pos = (r, c)
-                                if board[r][c] == 'k':
+                                if board[r][c] == 'r':
                                     black_king_pos = (r, c)
                         
                         # Verificar se o rei está em check
