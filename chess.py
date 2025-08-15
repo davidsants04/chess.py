@@ -135,6 +135,11 @@ def is_valid_move(piece, start_pos, end_pos, board, current_turn):
 
     return False
 
+# Função para promover o peão
+def promote_pawn(board, row, col, piece):
+    if piece.lower() == 'p' and (row == 0 or row == 7):  # Se o peão atingiu a última linha
+        board[row][col] = 'D' if piece.isupper() else 'd'  # Promover para rainha
+
 # Função para verificar se o rei está em check
 def is_king_in_check(board, king_pos, current_turn):
     # Verifique se alguma peça adversária pode atacar o rei
@@ -215,6 +220,8 @@ def main():
                     if (row, col) in valid_moves:
                         board[row][col] = selected_piece
                         board[start_pos[0]][start_pos[1]] = ""
+                        # Promover o peão caso chegue ao final
+                        promote_pawn(board, row, col, selected_piece)
                         # Troca de turno
                         current_turn = 'black' if current_turn == 'white' else 'white'
                         selected_piece = None
@@ -241,7 +248,7 @@ def main():
         pygame.display.flip()
     
     pygame.quit()
-    sys.exit()
+    sys.exit() 
 
 if __name__ == "__main__":
     main()
